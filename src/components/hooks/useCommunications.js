@@ -1,30 +1,15 @@
-import { useState } from 'react';
-import { initialCommunication } from '../data/seeds';
+import { useState, useCallback } from 'react';
 
-export const useCommunications = (startDate) => {
-  const [communications, setCommunications] = useState([initialCommunication(startDate)]);
+export const useCommunications = () => {
+  const [communications, setCommunications] = useState([]);
 
-  const addCommunication = (type, milestone, daysOffset = 0, options = {}, currentDate) => {
-    const baseDate = new Date(currentDate);
-    if (daysOffset > 0) {
-      baseDate.setDate(baseDate.getDate() + daysOffset);
-    }
-    
-    const newComm = {
-      id: Date.now() + Math.random(),
-      type,
-      milestone: milestone ? { ...milestone } : null,
-      date: new Date(baseDate),
-      triggerEvent: options.triggerEvent ? { ...options.triggerEvent } : milestone ? { ...milestone } : null,
-      description: options.description || `${milestone.name} - ${type}`
-    };
-    
+  const addCommunication = useCallback((newComm) => {
     setCommunications(prev => [...prev, newComm]);
-  };
+  }, []);
 
-  const resetCommunications = () => {
-    setCommunications([initialCommunication(startDate)]);
-  };
+  const resetCommunications = useCallback(() => {
+    setCommunications([]);
+  }, []);
 
   return {
     communications,

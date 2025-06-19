@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { getStateColor, getTypeIcon, formatDateForInput } from '../utils';
-import { MilestoneShape } from '../types';
+import { milestoneType } from '../types';
 
 const MilestoneList = ({
   milestones,
@@ -112,7 +112,7 @@ const MilestoneList = ({
 };
 
 MilestoneList.propTypes = {
-  milestones: PropTypes.arrayOf(MilestoneShape).isRequired,
+  milestones: PropTypes.arrayOf(milestoneType).isRequired,
   changeState: PropTypes.func.isRequired,
   changeType: PropTypes.func.isRequired,
   toggleOptional: PropTypes.func.isRequired,

@@ -8,12 +8,6 @@ export const initialMilestones = [
   { id: 5, name: 'Milestone 5', type: 'milestone', state: 'locked', optional: false }
 ];
 
-export const initialUnlockStrategy = UNLOCK_STRATEGIES.BY_DATE;
+export const initialUnlockStrategy = UNLOCK_STRATEGIES.BY_COMPLETION_ONLY;
 
-export const initialCommunication = (startDate) => ({
-  id: 1,
-  type: 'plan_start',
-  milestone: null,
-  date: startDate,
-  description: 'Plan begins'
-});
+export const initialCommunication = null;

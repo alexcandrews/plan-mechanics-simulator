@@ -3,6 +3,7 @@ import AddMilestone from './AddMilestone/AddMilestone';
 import MilestoneList from './MilestoneList/MilestoneList';
 import ProgressPath from './ProgressPath/ProgressPath';
 import CommunicationsSchedule from './CommunicationsSchedule/CommunicationsSchedule';
+import CommunicationsRules from './CommunicationsRules/CommunicationsRules';
 import Rules from './Rules/Rules';
 import PlanConfigurations from './PlanConfigurations/PlanConfigurations';
 import CurrentDateControl from './CurrentDateControl/CurrentDateControl';
@@ -17,6 +18,25 @@ const PlanMechanicsSimulator = () => {
   const startDate = new Date();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [unlockStrategy, setUnlockStrategy] = useState(initialUnlockStrategy);
+
+  const [communicationRules, setCommunicationRules] = useState({
+    planStatus: { enabled: true },
+    milestoneUnlocked: {
+      enabled: true,
+      days: 3,
+      applyToChapters: true,
+      applyToSessions: false,
+      ignoreOptional: true,
+      furthestOnly: true
+    },
+    sessionReminder: {
+      enabled: true,
+      days: 2
+    }
+  });
+
+  const [pendingCommunications, setPendingCommunications] = useState([]);
+
   const [newMilestoneStartDate, setNewMilestoneStartDate] = useState(new Date());
   const [newMilestoneEndDate, setNewMilestoneEndDate] = useState(() => {
     const tomorrow = new Date();
@@ -24,13 +44,25 @@ const PlanMechanicsSimulator = () => {
     return tomorrow;
   });
   
-  const { communications, addCommunication, resetCommunications } = useCommunications(startDate);
+  const { communications, addCommunication, resetCommunications } = useCommunications();
   
-  const wrappedAddCommunication = useCallback((type, milestone, daysOffset = 0, options = {}) => {
-    addCommunication(type, milestone, daysOffset, options, currentDate);
-  }, [addCommunication, currentDate]);
+  const scheduleCommunication = useCallback((comm) => {
+    setPendingCommunications(prev => {
+      let newComms = [...prev];
+      // If the "furthest only" rule is active, clear out other pending unlocked comms.
+      if (comm.rule === 'milestoneUnlocked' && communicationRules.milestoneUnlocked.furthestOnly) {
+        newComms = newComms.filter(p => p.rule !== 'milestoneUnlocked');
+      }
+      
+      const sendDate = new Date(currentDate);
+      sendDate.setDate(sendDate.getDate() + comm.daysOffset);
 
-  const { handleMilestoneStateChange } = useMilestoneCommunications(wrappedAddCommunication);
+      newComms.push({ ...comm, sendDate });
+      return newComms;
+    });
+  }, [communicationRules.milestoneUnlocked.furthestOnly, currentDate]);
+  
+  const { handleMilestoneStateChange } = useMilestoneCommunications(communicationRules, scheduleCommunication);
 
   const {
     milestones,
@@ -93,6 +125,91 @@ const PlanMechanicsSimulator = () => {
   useEffect(() => {
     updateMilestoneStates(currentDate);
   }, [currentDate, unlockStrategy, updateMilestoneStates]);
+
+  useEffect(() => {
+    // --- Communications Engine ---
+    const now = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    const { planStatus, sessionReminder } = communicationRules;
+
+    // Rule: Plan Started
+    const planStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    if (planStatus.enabled && now.getTime() === planStartDate.getTime()) {
+      if (!communications.some(c => c.type === 'Plan Started')) {
+        addCommunication({
+          id: Date.now() + Math.random(),
+          type: 'Plan Started',
+          date: new Date(currentDate),
+          milestone: null
+        });
+      }
+    }
+
+    // Rule: Plan Completed
+    const allRequiredCompleted = milestones
+      .filter(m => !m.optional)
+      .every(m => m.state === 'completed');
+      
+    if (planStatus.enabled && allRequiredCompleted) {
+      // To prevent sending this every day after completion, we should ideally check
+      // if it was already sent. For this simulator, we'll send it once.
+      if (!communications.some(c => c.type === 'Plan Completed')) {
+        addCommunication({
+          id: Date.now() + Math.random(),
+          type: 'Plan Completed',
+          date: new Date(currentDate),
+          milestone: null
+        });
+      }
+    }
+
+    const newPendingComms = [];
+    pendingCommunications.forEach(comm => {
+      const commSendDate = new Date(comm.sendDate.getFullYear(), comm.sendDate.getMonth(), comm.sendDate.getDate());
+
+      if (now.getTime() === commSendDate.getTime()) {
+        const milestone = milestones.find(m => m.id === comm.milestoneId);
+        if (milestone) {
+          addCommunication({
+            id: Date.now() + Math.random(),
+            type: `Unlocked Follow-up: ${milestone.name}`,
+            date: new Date(currentDate),
+            milestone
+          });
+        }
+      } else if (now.getTime() < commSendDate.getTime()) {
+        newPendingComms.push(comm);
+      }
+    });
+
+    // Rule: Session Reminder
+    if (sessionReminder.enabled) {
+      milestones.forEach(milestone => {
+        if (milestone.type === 'session' && milestone.startDate) {
+          const reminderDate = new Date(milestone.startDate);
+          reminderDate.setDate(reminderDate.getDate() - sessionReminder.days);
+          const reminderDateOnly = new Date(reminderDate.getFullYear(), reminderDate.getMonth(), reminderDate.getDate());
+
+          if(now.getTime() === reminderDateOnly.getTime()) {
+            const reminderType = `Session Reminder: ${milestone.name}`;
+            if (!communications.some(c => c.type === reminderType && c.milestone?.id === milestone.id)) {
+              addCommunication({
+                id: Date.now() + Math.random(),
+                type: reminderType,
+                date: new Date(currentDate),
+                milestone
+              });
+            }
+          }
+        }
+      });
+    }
+
+    if (newPendingComms.length !== pendingCommunications.length) {
+      setPendingCommunications(newPendingComms);
+    }
+    // --- End Communications Engine ---
+
+  }, [pendingCommunications, addCommunication, milestones, communicationRules, startDate, communications, currentDate]);
 
   const handleDateChange = useCallback((e) => {
     const dateStr = `${e.target.value}T00:00:00`;
@@ -199,55 +316,65 @@ const PlanMechanicsSimulator = () => {
   }, []);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Plan Mechanics Simulator</h1>
-      
-      <CurrentDateControl 
-        currentDate={currentDate}
-        handleDateChange={handleDateChange}
-        handleNextDay={handleNextDay}
-      />
-      
-      <PlanConfigurations 
-        unlockStrategy={unlockStrategy}
-        setUnlockStrategy={handleUnlockStrategyChange}
-        resetPlanMilestones={resetPlanMilestones}
-      />
-      
-      <AddMilestone
-        newMilestoneName={newMilestoneName}
-        setNewMilestoneName={setNewMilestoneName}
-        newMilestoneType={newMilestoneType}
-        setNewMilestoneType={setNewMilestoneType}
-        newMilestoneOptional={newMilestoneOptional}
-        setNewMilestoneOptional={setNewMilestoneOptional}
-        addMilestone={addMilestone}
-        handleKeyPress={handleKeyPress}
-        newMilestoneStartDate={newMilestoneStartDate}
-        setNewMilestoneStartDate={setNewMilestoneStartDate}
-        newMilestoneEndDate={newMilestoneEndDate}
-        setNewMilestoneEndDate={setNewMilestoneEndDate}
-      />
-      
-      <MilestoneList
-        milestones={milestones}
-        changeState={changeState}
-        changeType={changeType}
-        toggleOptional={toggleOptional}
-        removeMilestone={removeMilestone}
-        changeStartDate={changeStartDate}
-        changeEndDate={changeEndDate}
-      />
-      
-      <Rules />
-      
-      <ProgressPath milestones={milestones} />
-      
-      <CommunicationsSchedule
-        communications={communications}
-        startDate={startDate}
-        currentDate={currentDate}
-      />
+    <div className="min-h-screen bg-gray-100 font-sans">
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800">Plan Mechanics Simulator</h1>
+          <p className="text-lg text-gray-600">
+            A tool to visualize and test the unlocking and communication logic of guided plans.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <PlanConfigurations
+            unlockStrategy={unlockStrategy}
+            setUnlockStrategy={handleUnlockStrategyChange}
+            resetPlanMilestones={resetPlanMilestones}
+          />
+          <CommunicationsRules
+            rules={communicationRules}
+            setRules={setCommunicationRules}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <main className="md:col-span-2 space-y-6">
+            <CurrentDateControl
+              currentDate={currentDate}
+              onDateChange={handleDateChange}
+              onNextDay={handleNextDay}
+            />
+            <AddMilestone
+              newMilestoneName={newMilestoneName}
+              setNewMilestoneName={setNewMilestoneName}
+              newMilestoneType={newMilestoneType}
+              setNewMilestoneType={setNewMilestoneType}
+              newMilestoneOptional={newMilestoneOptional}
+              setNewMilestoneOptional={setNewMilestoneOptional}
+              newMilestoneStartDate={newMilestoneStartDate}
+              setNewMilestoneStartDate={setNewMilestoneStartDate}
+              newMilestoneEndDate={newMilestoneEndDate}
+              setNewMilestoneEndDate={setNewMilestoneEndDate}
+              addMilestone={addMilestone}
+              handleKeyPress={handleKeyPress}
+            />
+            <MilestoneList
+              milestones={milestones}
+              changeState={changeState}
+              changeType={changeType}
+              toggleOptional={toggleOptional}
+              removeMilestone={removeMilestone}
+              changeStartDate={changeStartDate}
+              changeEndDate={changeEndDate}
+            />
+            <ProgressPath milestones={milestones} />
+          </main>
+          
+          <aside className="space-y-6">
+            <CommunicationsSchedule communications={communications} />
+          </aside>
+        </div>
+      </div>
     </div>
   );
 };

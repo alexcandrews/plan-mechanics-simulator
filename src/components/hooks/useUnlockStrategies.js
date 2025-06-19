@@ -38,12 +38,31 @@ export const useUnlockStrategies = (milestones, setMilestones, currentDate, unlo
         newState = oldState;
     }
 
-    if (oldState !== newState) onStateChange(milestone, oldState, newState);
+    if (oldState === newState) {
+      return milestone;
+    }
+
+    onStateChange(milestone, oldState, newState);
     return { ...milestone, state: newState };
   }, [unlockStrategy, stripTimeFromDate, arePriorRequiredMilestonesCompleted, onStateChange]);
 
   const updateMilestoneStates = useCallback((date) => {
-    setMilestones(prev => prev.map((m, i, list) => handleUnlockStrategy(m, i, list, date)));
+    setMilestones(prev => {
+      let hasChanged = false;
+      const newMilestones = prev.map((m, i, list) => {
+        const newMilestone = handleUnlockStrategy(m, i, list, date);
+        if (newMilestone !== m) { // Check for referential inequality
+          hasChanged = true;
+        }
+        return newMilestone;
+      });
+
+      if (hasChanged) {
+        return newMilestones;
+      }
+      
+      return prev; // Return the original array, breaking the loop
+    });
   }, [handleUnlockStrategy, setMilestones]);
 
   const changeState = useCallback((id, newState) => {

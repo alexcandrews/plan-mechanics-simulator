@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import AddMilestone from './AddMilestone/AddMilestone';
 import MilestoneList from './MilestoneList/MilestoneList';
-import ProgressPath from './ProgressPath/ProgressPath';
 import CommunicationsSchedule from './CommunicationsSchedule/CommunicationsSchedule';
 import CommunicationsRules from './CommunicationsRules/CommunicationsRules';
 import Rules from './Rules/Rules';
@@ -15,7 +14,7 @@ import { useMilestoneCommunications } from './hooks/useMilestoneCommunications';
 import { initialUnlockStrategy } from './data/seeds';
 
 const PlanMechanicsSimulator = () => {
-  const startDate = new Date();
+  const [startDate] = useState(new Date());
   const [currentDate, setCurrentDate] = useState(new Date());
   const [unlockStrategy, setUnlockStrategy] = useState(initialUnlockStrategy);
 
@@ -339,11 +338,6 @@ const PlanMechanicsSimulator = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <main className="md:col-span-2 space-y-6">
-            <CurrentDateControl
-              currentDate={currentDate}
-              onDateChange={handleDateChange}
-              onNextDay={handleNextDay}
-            />
             <AddMilestone
               newMilestoneName={newMilestoneName}
               setNewMilestoneName={setNewMilestoneName}
@@ -367,13 +361,18 @@ const PlanMechanicsSimulator = () => {
               changeStartDate={changeStartDate}
               changeEndDate={changeEndDate}
             />
-            <ProgressPath milestones={milestones} />
           </main>
           
           <aside className="space-y-6">
             <CommunicationsSchedule communications={communications} />
           </aside>
         </div>
+
+        <CurrentDateControl 
+          currentDate={currentDate}
+          onDateChange={handleDateChange}
+          onNextDay={handleNextDay}
+        />
       </div>
     </div>
   );

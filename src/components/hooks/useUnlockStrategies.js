@@ -1,186 +1,78 @@
+// src/components/hooks/useUnlockStrategies.js
 import { useCallback } from 'react';
 import { UNLOCK_STRATEGIES } from '../utils';
 
 export const useUnlockStrategies = (milestones, setMilestones, currentDate, unlockStrategy, onStateChange) => {
-  const stripTimeFromDate = useCallback((date) => {
-    return new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    );
+  const stripTimeFromDate = useCallback((date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()), []);
+
+  const arePriorRequiredMilestonesCompleted = useCallback((index, list) => {
+    return list.slice(0, index).filter(m => !m.optional).every(m => m.state === 'completed');
   }, []);
 
-  const arePriorRequiredMilestonesCompleted = useCallback((currentIndex, milestonesList) => {
-    // Check all milestones before the current one
-    for (let i = 0; i < currentIndex; i++) {
-      const milestone = milestonesList[i];
-      // If we find a non-optional milestone that isn't completed, return false
-      if (!milestone.optional && milestone.state !== 'completed') {
-        return false;
-      }
+  const handleUnlockStrategy = useCallback((milestone, index, list, date) => {
+    // A completed milestone should never be changed by the unlocking logic.
+    if (milestone.state === 'completed') {
+      return milestone;
     }
-    return true;
-  }, []);
 
-  const handleByDateStrategy = useCallback((milestone, currentDateStripped) => {
-    if (!milestone.startDate) return milestone;
-    
-    const startDateStripped = stripTimeFromDate(milestone.startDate);
     const oldState = milestone.state;
+    const unlockAt = milestone.startDate ? stripTimeFromDate(milestone.startDate) : null;
+    const now = stripTimeFromDate(date);
+    const completed = arePriorRequiredMilestonesCompleted(index, list);
     let newState = oldState;
-    
-    // If the current date is before the start date, milestone should be locked
-    if (currentDateStripped < startDateStripped) {
-      newState = 'locked';
-    }
-    // If the current date is >= start date and milestone is locked, unlock it
-    else if (milestone.state === 'locked') {
-      newState = 'unlocked';
-    }
-    
-    // If state changed, notify
-    if (oldState !== newState) {
-      onStateChange(milestone, oldState, newState);
-    }
-    
-    return { ...milestone, state: newState };
-  }, [stripTimeFromDate, onStateChange]);
-
-  const handleByBothStrategy = useCallback((milestone, currentDateStripped, index, allMilestones) => {
-    if (!milestone.startDate) return milestone;
-    
-    const startDateStripped = stripTimeFromDate(milestone.startDate);
-    const dateCondition = currentDateStripped >= startDateStripped;
-    const completionCondition = arePriorRequiredMilestonesCompleted(index, allMilestones);
-    const oldState = milestone.state;
-    let newState = oldState;
-    
-    // If either condition is not met, milestone should be locked
-    if (!dateCondition || !completionCondition) {
-      newState = 'locked';
-    }
-    // If both conditions are met and milestone is locked, unlock it
-    else if (milestone.state === 'locked') {
-      newState = 'unlocked';
-    }
-    
-    // If state changed, notify
-    if (oldState !== newState) {
-      onStateChange(milestone, oldState, newState);
-    }
-    
-    return { ...milestone, state: newState };
-  }, [stripTimeFromDate, arePriorRequiredMilestonesCompleted, onStateChange]);
-
-  const handleByCompletionStrategy = useCallback((milestone, index, allMilestones) => {
-    const oldState = milestone.state;
-    let newState = oldState;
-    
-    // If prior required milestones are not completed, milestone should be locked
-    if (!arePriorRequiredMilestonesCompleted(index, allMilestones)) {
-      newState = 'locked';
-    }
-    // If prior required milestones are completed and milestone is locked, unlock it
-    else if (milestone.state === 'locked') {
-      newState = 'unlocked';
-    }
-    
-    // If state changed, notify
-    if (oldState !== newState) {
-      onStateChange(milestone, oldState, newState);
-    }
-    
-    return { ...milestone, state: newState };
-  }, [arePriorRequiredMilestonesCompleted, onStateChange]);
-
-  const updateMilestoneStates = useCallback((date) => {
-    const currentDateStripped = stripTimeFromDate(date);
-    
-    setMilestones(prevMilestones => {
-      return prevMilestones.map((milestone, index, array) => {
-        switch (unlockStrategy) {
-          case UNLOCK_STRATEGIES.BY_DATE:
-            return handleByDateStrategy(milestone, currentDateStripped);
-          case UNLOCK_STRATEGIES.BY_BOTH:
-            return handleByBothStrategy(milestone, currentDateStripped, index, array);
-          case UNLOCK_STRATEGIES.BY_COMPLETION:
-            return handleByCompletionStrategy(milestone, index, array);
-          default:
-            return milestone;
-        }
-      });
-    });
-  }, [unlockStrategy, handleByDateStrategy, handleByBothStrategy, handleByCompletionStrategy, stripTimeFromDate]);
-
-  const changeState = useCallback((id, newState) => {
-    const milestone = milestones.find(m => m.id === id);
-    if (!milestone || !milestone.startDate) return;
-
-    const currentDateStripped = stripTimeFromDate(currentDate);
-    const startDateStripped = stripTimeFromDate(milestone.startDate);
-    const milestoneIndex = milestones.findIndex(m => m.id === id);
-    const oldState = milestone.state;
 
     switch (unlockStrategy) {
-      case UNLOCK_STRATEGIES.BY_DATE: {
-        // Only allow state changes if current date >= start date
-        if (currentDateStripped >= startDateStripped) {
-          setMilestones(prevMilestones => 
-            prevMilestones.map(m => 
-              m.id === id ? { ...m, state: newState } : m
-            )
-          );
-          onStateChange(milestone, oldState, newState);
-        }
+      case UNLOCK_STRATEGIES.BY_COMPLETION_ONLY:
+        newState = completed ? 'unlocked' : 'locked';
         break;
-      }
-      case UNLOCK_STRATEGIES.BY_BOTH: {
-        // Only allow state changes if both conditions are met
-        const dateCondition = currentDateStripped >= startDateStripped;
-        const completionCondition = arePriorRequiredMilestonesCompleted(milestoneIndex, milestones);
-        
-        if (dateCondition && completionCondition) {
-          setMilestones(prevMilestones => {
-            const updatedMilestones = prevMilestones.map(m => 
-              m.id === id ? { ...m, state: newState } : m
-            );
-            // After changing state, we need to update all subsequent milestones
-            return updatedMilestones.map((m, idx) => {
-              if (idx <= milestoneIndex) return m;
-              return handleByBothStrategy(m, currentDateStripped, idx, updatedMilestones);
-            });
-          });
-          onStateChange(milestone, oldState, newState);
-        }
+      case UNLOCK_STRATEGIES.BY_UNLOCK_AT_ONLY:
+        newState = unlockAt && now >= unlockAt ? 'unlocked' : 'locked';
         break;
-      }
-      case UNLOCK_STRATEGIES.BY_COMPLETION: {
-        setMilestones(prevMilestones => {
-          const updatedMilestones = prevMilestones.map(m => 
-            m.id === id ? { ...m, state: newState } : m
-          );
-          // After changing state, we need to update all subsequent milestones
-          return updatedMilestones.map((m, idx) => {
-            if (idx <= milestoneIndex) return m;
-            return handleByCompletionStrategy(m, idx, updatedMilestones);
-          });
-        });
-        onStateChange(milestone, oldState, newState);
+      case UNLOCK_STRATEGIES.BY_UNLOCK_AT_OR_COMPLETION:
+        newState = (completed || (unlockAt && now >= unlockAt)) ? 'unlocked' : 'locked';
         break;
-      }
-      default: {
-        setMilestones(prevMilestones => 
-          prevMilestones.map(m => 
-            m.id === id ? { ...m, state: newState } : m
-          )
-        );
-        onStateChange(milestone, oldState, newState);
-      }
+      case UNLOCK_STRATEGIES.BY_UNLOCK_AT_AND_COMPLETION:
+        newState = (completed && unlockAt && now >= unlockAt) ? 'unlocked' : 'locked';
+        break;
+      default:
+        newState = oldState;
     }
-  }, [milestones, currentDate, unlockStrategy, stripTimeFromDate, handleByBothStrategy, handleByCompletionStrategy, arePriorRequiredMilestonesCompleted, onStateChange]);
 
-  return {
-    updateMilestoneStates,
-    changeState
-  };
-}; 
+    if (oldState !== newState) onStateChange(milestone, oldState, newState);
+    return { ...milestone, state: newState };
+  }, [unlockStrategy, stripTimeFromDate, arePriorRequiredMilestonesCompleted, onStateChange]);
+
+  const updateMilestoneStates = useCallback((date) => {
+    setMilestones(prev => prev.map((m, i, list) => handleUnlockStrategy(m, i, list, date)));
+  }, [handleUnlockStrategy, setMilestones]);
+
+  const changeState = useCallback((id, newState) => {
+    const now = stripTimeFromDate(currentDate);
+    setMilestones(prevMilestones => {
+      // First, create an intermediate array with the state of the target milestone updated.
+      const intermediateMilestones = prevMilestones.map(m => {
+        if (m.id === id) {
+          const oldState = m.state;
+          if (oldState !== newState) {
+            onStateChange(m, oldState, newState);
+          }
+          return { ...m, state: newState };
+        }
+        return m;
+      });
+
+      // Now, using the intermediate state, re-evaluate all milestones.
+      // This second pass ensures the logic sees the newly updated state of the milestone that was just changed.
+      return intermediateMilestones.map((m, i, list) => {
+        // The milestone that was just manually changed should not be re-evaluated now.
+        if (m.id === id) {
+          return m;
+        }
+        // All other milestones are re-evaluated against the new state of the world.
+        return handleUnlockStrategy(m, i, list, now);
+      });
+    });
+  }, [currentDate, handleUnlockStrategy, onStateChange, stripTimeFromDate, setMilestones]);
+
+  return { updateMilestoneStates, changeState };
+};

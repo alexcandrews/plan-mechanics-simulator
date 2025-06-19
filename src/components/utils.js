@@ -41,7 +41,8 @@ export const getTypeIcon = (type) => {
 };
 
 export const UNLOCK_STRATEGIES = {
-  BY_DATE: 'BY_DATE',
-  BY_COMPLETION: 'BY_COMPLETION',
-  BY_BOTH: 'BY_BOTH'
+  BY_COMPLETION_ONLY: 'by_completion_only',
+  BY_UNLOCK_AT_ONLY: 'by_unlock_at_only',
+  BY_UNLOCK_AT_OR_COMPLETION: 'by_unlock_at_or_completion',
+  BY_UNLOCK_AT_AND_COMPLETION: 'by_unlock_at_and_completion'
 }; 

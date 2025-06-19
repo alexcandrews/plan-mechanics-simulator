@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import AddMilestone from './AddMilestone/AddMilestone';
 import MilestoneList from './MilestoneList/MilestoneList';
 import ProgressPath from './ProgressPath/ProgressPath';
@@ -58,8 +58,8 @@ const PlanMechanicsSimulator = () => {
 
   // Wrap the original changeState to use strategy-based state changes
   const changeState = useCallback((id, newState) => {
-    strategyChangeState(id, newState, originalChangeState);
-  }, [strategyChangeState, originalChangeState]);
+    strategyChangeState(id, newState);
+  }, [strategyChangeState]);
 
   const shouldAutoSetDates = useCallback((strategy) => {
     return [
@@ -90,95 +90,33 @@ const PlanMechanicsSimulator = () => {
     });
   }, []);
 
+  useEffect(() => {
+    updateMilestoneStates(currentDate);
+  }, [currentDate, unlockStrategy, updateMilestoneStates]);
+
   const handleDateChange = useCallback((e) => {
-    // Add time component and handle timezone properly
     const dateStr = `${e.target.value}T00:00:00`;
     const newDate = new Date(dateStr);
     setCurrentDate(newDate);
-    
-    if ([UNLOCK_STRATEGIES.BY_DATE, UNLOCK_STRATEGIES.BY_BOTH].includes(unlockStrategy)) {
-      updateMilestoneStates(newDate);
-    }
-  }, [unlockStrategy, updateMilestoneStates]);
+  }, []);
 
   const handleUnlockStrategyChange = useCallback((newStrategy) => {
-    // Reset current date to today
-    const today = new Date();
-    setCurrentDate(today);
-    
-    // Set the new strategy
     setUnlockStrategy(newStrategy);
-    
-    // Reset the plan with the new strategy
-    const baseMilestones = [
-      { 
-        id: 1, 
-        name: 'Milestone 1', 
-        type: 'milestone', 
-        state: 'unlocked', 
-        optional: false
-      },
-      { 
-        id: 2, 
-        name: 'Milestone 2', 
-        type: 'milestone', 
-        state: 'locked', 
-        optional: true
-      },
-      { 
-        id: 3, 
-        name: 'Milestone 3', 
-        type: 'milestone', 
-        state: 'locked', 
-        optional: false
-      },
-      { 
-        id: 4, 
-        name: 'Milestone 4', 
-        type: 'milestone', 
-        state: 'locked', 
-        optional: false
-      },
-      { 
-        id: 5, 
-        name: 'Milestone 5', 
-        type: 'milestone', 
-        state: 'locked', 
-        optional: false
-      }
-    ];
+    // The useEffect will handle the update.
+  }, []);
 
-    setMilestones(baseMilestones);
-    resetCommunications();
-    
-    // Set dates since we're using a strategy that requires dates
-    updateMilestoneDates(today);
-    
-    // Update milestone states based on the new strategy
-    if ([UNLOCK_STRATEGIES.BY_DATE, UNLOCK_STRATEGIES.BY_BOTH].includes(newStrategy)) {
-      updateMilestoneStates(today);
-    }
-  }, [updateMilestoneDates, updateMilestoneStates, resetCommunications]);
-
-  // Initialize dates on component mount
+  // Initialize dates on component mount - this can be removed or simplified
+  // as the main useEffect will now handle this.
+  // For now, we'll leave it to ensure initial setup is correct.
   React.useEffect(() => {
-    if (shouldAutoSetDates(unlockStrategy)) {
-      updateMilestoneDates(currentDate);
-    }
-    if (unlockStrategy === UNLOCK_STRATEGIES.BY_DATE) {
-      updateMilestoneStates(currentDate);
-    }
-  }, []); // Empty dependency array means this runs once on mount
+    updateMilestoneDates(startDate);
+  }, []); // Runs once on mount
 
   const handleNextDay = useCallback(() => {
     const nextDay = new Date(currentDate);
     nextDay.setDate(nextDay.getDate() + 1);
     setCurrentDate(nextDay);
-    
-    if ([UNLOCK_STRATEGIES.BY_DATE, UNLOCK_STRATEGIES.BY_BOTH].includes(unlockStrategy)) {
-      updateMilestoneStates(nextDay);
-    }
-  }, [currentDate, unlockStrategy, updateMilestoneStates]);
+  }, [currentDate]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -189,6 +127,8 @@ const PlanMechanicsSimulator = () => {
   const resetPlanMilestones = () => {
     const newStrategy = initialUnlockStrategy;
     setUnlockStrategy(newStrategy);
+    const today = new Date();
+    setCurrentDate(today);
     
     const baseMilestones = [
       { 
@@ -196,43 +136,50 @@ const PlanMechanicsSimulator = () => {
         name: 'Milestone 1', 
         type: 'milestone', 
         state: 'unlocked', 
-        optional: false
+        optional: false,
+        startDate: today,
+        endDate: new Date(new Date().setDate(today.getDate() + 7))
       },
       { 
         id: 2, 
         name: 'Milestone 2', 
         type: 'milestone', 
         state: 'locked', 
-        optional: true
+        optional: true,
+        startDate: new Date(new Date().setDate(today.getDate() + 7)),
+        endDate: new Date(new Date().setDate(today.getDate() + 14))
       },
       { 
         id: 3, 
         name: 'Milestone 3', 
         type: 'milestone', 
         state: 'locked', 
-        optional: false
+        optional: false,
+        startDate: new Date(new Date().setDate(today.getDate() + 14)),
+        endDate: new Date(new Date().setDate(today.getDate() + 21))
       },
       { 
         id: 4, 
         name: 'Milestone 4', 
         type: 'milestone', 
         state: 'locked', 
-        optional: false
+        optional: false,
+        startDate: new Date(new Date().setDate(today.getDate() + 21)),
+        endDate: new Date(new Date().setDate(today.getDate() + 28))
       },
       { 
         id: 5, 
         name: 'Milestone 5', 
         type: 'milestone', 
         state: 'locked', 
-        optional: false
+        optional: false,
+        startDate: new Date(new Date().setDate(today.getDate() + 28)),
+        endDate: new Date(new Date().setDate(today.getDate() + 35))
       }
     ];
 
     setMilestones(baseMilestones);
     resetCommunications();
-    
-    // Set dates since we're using a strategy that requires dates
-    updateMilestoneDates(currentDate);
   };
 
   const changeStartDate = useCallback((id, newDate) => {

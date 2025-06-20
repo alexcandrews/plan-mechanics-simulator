@@ -3,7 +3,11 @@ import { useCallback } from 'react';
 import { UNLOCK_STRATEGIES } from '../utils';
 
 export const useUnlockStrategies = (milestones, setMilestones, currentDate, unlockStrategy, onStateChange) => {
-  const stripTimeFromDate = useCallback((date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()), []);
+  const stripTimeFromDate = useCallback((date) => {
+    // Use UTC to avoid timezone issues in date comparisons
+    const utcDate = new Date(date);
+    return new Date(Date.UTC(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate()));
+  }, []);
 
   const arePriorRequiredMilestonesCompleted = useCallback((index, list) => {
     return list.slice(0, index).filter(m => !m.optional).every(m => m.state === 'completed');

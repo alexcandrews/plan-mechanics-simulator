@@ -19,6 +19,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:unit": "react-scripts test --testPathPattern=\"hooks|utils\" --watchAll=false",
+    "test:integration": "react-scripts test --testPathPattern=\"integration\" --watchAll=false",
+    "test:all": "react-scripts test --watchAll=false",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:unlock": "react-scripts test --testNamePattern=\"useUnlockStrategies\" --watchAll=false",
+    "test:comms": "react-scripts test --testNamePattern=\"Communication\" --watchAll=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

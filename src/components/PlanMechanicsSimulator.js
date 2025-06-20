@@ -6,11 +6,13 @@ import CommunicationsRules from './CommunicationsRules/CommunicationsRules';
 import Rules from './Rules/Rules';
 import PlanConfigurations from './PlanConfigurations/PlanConfigurations';
 import CurrentDateControl from './CurrentDateControl/CurrentDateControl';
+import CurrentMilestoneDisplay from './CurrentMilestoneDisplay/CurrentMilestoneDisplay';
 import { UNLOCK_STRATEGIES } from './utils';
 import { useMilestones } from './hooks/useMilestones';
 import { useCommunications } from './hooks/useCommunications';
 import { useUnlockStrategies } from './hooks/useUnlockStrategies';
 import { useMilestoneCommunications } from './hooks/useMilestoneCommunications';
+import { useRedirectionLogic } from './hooks/useRedirectionLogic';
 import { initialUnlockStrategy } from './data/seeds';
 
 const PlanMechanicsSimulator = () => {
@@ -86,6 +88,9 @@ const PlanMechanicsSimulator = () => {
     unlockStrategy,
     handleMilestoneStateChange
   );
+
+  // Get current milestone based on redirection logic
+  const { currentMilestone } = useRedirectionLogic(milestones);
 
   // Wrap the original changeState to use strategy-based state changes
   const changeState = useCallback((id, newState) => {
@@ -373,6 +378,8 @@ const PlanMechanicsSimulator = () => {
           onDateChange={handleDateChange}
           onNextDay={handleNextDay}
         />
+        
+        <CurrentMilestoneDisplay currentMilestone={currentMilestone} />
       </div>
     </div>
   );

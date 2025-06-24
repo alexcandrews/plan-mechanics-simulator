@@ -12,20 +12,16 @@ describe('CurrentMilestoneDisplay', () => {
 
     render(<CurrentMilestoneDisplay currentMilestone={currentMilestone} />);
     
-    expect(screen.getByText('Current Milestone:')).toBeInTheDocument();
-    expect(screen.getByText('Chapter 1: Introduction')).toBeInTheDocument();
-    expect(screen.getByText('First Unlocked Required Milestone')).toBeInTheDocument();
+    expect(screen.getByText('Current Milestone: Chapter 1: Introduction')).toBeInTheDocument();
   });
 
   it('should render "No milestones available" when currentMilestone is null', () => {
     render(<CurrentMilestoneDisplay currentMilestone={null} />);
     
-    expect(screen.getByText('Current Milestone:')).toBeInTheDocument();
     expect(screen.getByText('No milestones available')).toBeInTheDocument();
-    expect(screen.queryByText(/First|Last|Fallback/)).not.toBeInTheDocument();
   });
 
-  it('should render different redirection reasons correctly', () => {
+  it('should render different milestone names correctly', () => {
     const testCases = [
       {
         currentMilestone: {
@@ -33,7 +29,7 @@ describe('CurrentMilestoneDisplay', () => {
           name: 'Milestone 1',
           reason: 'First Unlocked Required Milestone'
         },
-        expectedText: 'First Unlocked Required Milestone'
+        expectedText: 'Current Milestone: Milestone 1'
       },
       {
         currentMilestone: {
@@ -41,7 +37,7 @@ describe('CurrentMilestoneDisplay', () => {
           name: 'Optional Task',
           reason: 'First Unlocked Optional Milestone'
         },
-        expectedText: 'First Unlocked Optional Milestone'
+        expectedText: 'Current Milestone: Optional Task'
       },
       {
         currentMilestone: {
@@ -49,7 +45,7 @@ describe('CurrentMilestoneDisplay', () => {
           name: 'Completed Chapter',
           reason: 'Last Completed Milestone'
         },
-        expectedText: 'Last Completed Milestone'
+        expectedText: 'Current Milestone: Completed Chapter'
       },
       {
         currentMilestone: {
@@ -57,14 +53,13 @@ describe('CurrentMilestoneDisplay', () => {
           name: 'Getting Started',
           reason: 'First Milestone in Plan (Fallback)'
         },
-        expectedText: 'First Milestone in Plan (Fallback)'
+        expectedText: 'Current Milestone: Getting Started'
       }
     ];
 
     testCases.forEach(({ currentMilestone, expectedText }) => {
       const { unmount } = render(<CurrentMilestoneDisplay currentMilestone={currentMilestone} />);
       
-      expect(screen.getByText(currentMilestone.name)).toBeInTheDocument();
       expect(screen.getByText(expectedText)).toBeInTheDocument();
       
       unmount();
@@ -80,14 +75,14 @@ describe('CurrentMilestoneDisplay', () => {
 
     const { container } = render(<CurrentMilestoneDisplay currentMilestone={currentMilestone} />);
     
-    // Should be positioned below the current date control
+    // Should be positioned below the current date control on the right
     const displayElement = container.firstChild;
     expect(displayElement).toHaveClass('fixed');
     expect(displayElement).toHaveClass('bottom-6');
-    expect(displayElement).toHaveClass('left-6');
+    expect(displayElement).toHaveClass('right-6');
   });
 
-  it('should display milestone ID for debugging purposes', () => {
+  it('should display milestone name only (no ID in simplified UI)', () => {
     const currentMilestone = {
       id: 42,
       name: 'Debug Milestone',
@@ -96,8 +91,10 @@ describe('CurrentMilestoneDisplay', () => {
 
     render(<CurrentMilestoneDisplay currentMilestone={currentMilestone} />);
     
-    // Should show ID in a subtle way for debugging
-    expect(screen.getByText(/ID: 42/)).toBeInTheDocument();
+    // Should show the milestone name
+    expect(screen.getByText('Current Milestone: Debug Milestone')).toBeInTheDocument();
+    // Should not show ID in simplified UI
+    expect(screen.queryByText(/ID: 42/)).not.toBeInTheDocument();
   });
 
   it('should handle long milestone names gracefully', () => {
@@ -109,29 +106,28 @@ describe('CurrentMilestoneDisplay', () => {
 
     render(<CurrentMilestoneDisplay currentMilestone={currentMilestone} />);
     
-    expect(screen.getByText(currentMilestone.name)).toBeInTheDocument();
+    expect(screen.getByText(`Current Milestone: ${currentMilestone.name}`)).toBeInTheDocument();
     // The component should render without breaking (no specific layout test here, just ensure it renders)
   });
 
-  it('should apply different visual styling based on redirection reason', () => {
+  it('should render milestone name consistently regardless of reason', () => {
     const testCases = [
-      { reason: 'First Unlocked Required Milestone', expectedClass: 'text-green-600' },
-      { reason: 'First Unlocked Optional Milestone', expectedClass: 'text-blue-600' },
-      { reason: 'Last Completed Milestone', expectedClass: 'text-yellow-600' },
-      { reason: 'First Milestone in Plan (Fallback)', expectedClass: 'text-gray-600' }
+      { reason: 'First Unlocked Required Milestone' },
+      { reason: 'First Unlocked Optional Milestone' },
+      { reason: 'Last Completed Milestone' },
+      { reason: 'First Milestone in Plan (Fallback)' }
     ];
 
-    testCases.forEach(({ reason, expectedClass }) => {
+    testCases.forEach(({ reason }) => {
       const currentMilestone = {
         id: 1,
         name: 'Test Milestone',
         reason
       };
 
-      const { container, unmount } = render(<CurrentMilestoneDisplay currentMilestone={currentMilestone} />);
+      const { unmount } = render(<CurrentMilestoneDisplay currentMilestone={currentMilestone} />);
       
-      const reasonElement = screen.getByText(reason);
-      expect(reasonElement).toHaveClass(expectedClass);
+      expect(screen.getByText('Current Milestone: Test Milestone')).toBeInTheDocument();
       
       unmount();
     });

@@ -1,70 +1,95 @@
-# Getting Started with Create React App
+# Prototype Collection
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A collection of interactive prototypes and simulations for testing various concepts and mechanics.
 
-## Available Scripts
+## Available Prototypes
 
-In the project directory, you can run:
+### Plan Mechanics Simulator
+A comprehensive tool to visualize and test the unlocking and communication logic of guided plans.
 
-### `npm start`
+**Features:**
+- Multiple unlock strategies (completion-based, date-based, hybrid)
+- Communication rules and scheduling simulation
+- Comprehensive test suite with 120+ test cases
+- Redirection logic for milestone navigation
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+**Access:** Navigate to `/plan-mechanics-simulator` or click from the home page
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Getting Started
 
-### `npm test`
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Installation
 
-### `npm run build`
+```bash
+npm install
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Development
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npm start
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Runs the app in development mode. Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-### `npm run eject`
+### Testing
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+The project includes comprehensive testing for the Plan Mechanics Simulator:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+# Run all tests
+npm test
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+# Run specific test suites
+npm run test:unit          # Unit tests for hooks and utilities
+npm run test:integration   # Integration tests
+npm run test:coverage      # Coverage report
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Building
 
-## Learn More
+```bash
+npm run build
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Builds the app for production to the `build` folder.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Project Structure
 
-### Code Splitting
+```
+src/
+├── components/
+│   ├── HomePage/              # Landing page listing all prototypes
+│   ├── PlanMechanicsSimulator.js  # Main simulator component
+│   ├── hooks/                 # Reusable React hooks
+│   ├── utils/                 # Utility functions
+│   └── __tests__/             # Test files
+├── App.js                     # Main app with routing
+└── index.js                   # Entry point
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Adding New Prototypes
 
-### Analyzing the Bundle Size
+1. Create your prototype component in `src/components/`
+2. Add a route in `App.js`
+3. Update the prototypes array in `HomePage.js`
+4. Include relevant tests and documentation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Technology Stack
 
-### Making a Progressive Web App
+- **React 18** - UI framework
+- **React Router 6** - Client-side routing
+- **Tailwind CSS** - Styling
+- **Jest + React Testing Library** - Testing
+- **Create React App** - Build tooling
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Contributing
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+When adding new prototypes or features:
+1. Follow the existing code style and patterns
+2. Include comprehensive tests
+3. Update documentation as needed
+4. Test across different browsers and screen sizes

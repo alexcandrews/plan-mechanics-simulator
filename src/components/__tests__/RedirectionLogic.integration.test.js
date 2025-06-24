@@ -7,23 +7,15 @@ describe('Redirection Logic Integration', () => {
   it('should display current milestone based on redirection logic', () => {
     render(<PlanMechanicsSimulator />);
     
-    // Should show the current milestone display
-    expect(screen.getByText('Current Milestone:')).toBeInTheDocument();
-    
-    // With initial state, should show first milestone (Milestone 1 is unlocked by default)
-    // Look specifically within the current milestone display
-    const currentMilestoneSection = screen.getByText('Current Milestone:').parentElement;
-    expect(currentMilestoneSection).toHaveTextContent('Milestone 1');
-    expect(screen.getByText('First Unlocked Required Milestone')).toBeInTheDocument();
+    // Should show the current milestone display with Milestone 1 (unlocked by default)
+    expect(screen.getByText('Current Milestone: Milestone 1')).toBeInTheDocument();
   });
 
   it('should update current milestone when milestone states change', async () => {
     render(<PlanMechanicsSimulator />);
     
     // Initially should show Milestone 1 as unlocked required
-    const currentMilestoneSection = screen.getByText('Current Milestone:').parentElement;
-    expect(currentMilestoneSection).toHaveTextContent('Milestone 1');
-    expect(screen.getByText('First Unlocked Required Milestone')).toBeInTheDocument();
+    expect(screen.getByText('Current Milestone: Milestone 1')).toBeInTheDocument();
     
     // Note: This test verifies the display exists and shows initial state
     // Future enhancement: Add interaction with milestone state controls when available
@@ -37,7 +29,7 @@ describe('Redirection Logic Integration', () => {
     
     // After reset, check if redirection logic shows appropriate milestone
     // The exact behavior depends on how reset works with redirection logic
-    expect(screen.getByText('Current Milestone:')).toBeInTheDocument();
+    expect(screen.getByText(/Current Milestone:/)).toBeInTheDocument();
   });
 
   it('should update current milestone when unlock strategy changes', async () => {
@@ -48,7 +40,7 @@ describe('Redirection Logic Integration', () => {
     
     // Current milestone should update based on new strategy
     await waitFor(() => {
-      expect(screen.getByText('Current Milestone:')).toBeInTheDocument();
+      expect(screen.getByText(/Current Milestone:/)).toBeInTheDocument();
     });
     
     // The specific milestone shown will depend on the dates and strategy
@@ -64,11 +56,7 @@ describe('Redirection Logic Integration', () => {
     await userEvent.click(screen.getByText('Add Milestone'));
     
     // Current milestone display should still be present and functional
-    expect(screen.getByText('Current Milestone:')).toBeInTheDocument();
-    
-    // Should still show a valid current milestone
-    const milestoneDisplay = screen.getByText('Current Milestone:').parentElement;
-    expect(milestoneDisplay).toHaveTextContent(/Milestone|New Test Milestone/);
+    expect(screen.getByText(/Current Milestone:/)).toBeInTheDocument();
   });
 
   it('should handle date changes affecting current milestone', async () => {
@@ -81,17 +69,17 @@ describe('Redirection Logic Integration', () => {
     
     // Current milestone should update if date affects unlock logic
     await waitFor(() => {
-      expect(screen.getByText('Current Milestone:')).toBeInTheDocument();
+      expect(screen.getByText(/Current Milestone:/)).toBeInTheDocument();
     });
     
     // The display should remain functional regardless of date
   });
 
-  it('should display milestone ID for debugging purposes', () => {
+  it('should display current milestone in simplified format', () => {
     render(<PlanMechanicsSimulator />);
     
-    // Should show milestone ID in the current milestone display
-    expect(screen.getByText(/ID: \d+/)).toBeInTheDocument();
+    // Should show milestone in simplified format without ID or reason
+    expect(screen.getByText(/Current Milestone: Milestone/)).toBeInTheDocument();
   });
 
   it('should position current milestone display correctly relative to date control', () => {
@@ -99,31 +87,23 @@ describe('Redirection Logic Integration', () => {
     
     // Find both the date control and milestone display
     const dateControl = screen.getByText('Current Date:').parentElement;
-    const milestoneDisplay = screen.getByText('Current Milestone:').parentElement;
+    const milestoneDisplay = screen.getByText(/Current Milestone:/).parentElement;
     
     // Both should be fixed positioned
     expect(dateControl).toHaveClass('fixed');
     expect(milestoneDisplay).toHaveClass('fixed');
     
-    // Milestone display should be positioned to the left of date control
-    expect(milestoneDisplay).toHaveClass('left-6');
+    // Both should be positioned on the right, with milestone below date control
+    expect(milestoneDisplay).toHaveClass('right-6');
     expect(dateControl).toHaveClass('right-6');
   });
 
-  it('should display different colors for different redirection reasons', () => {
+  it('should display milestone name only in simplified UI', () => {
     render(<PlanMechanicsSimulator />);
     
-    // The reason text should have appropriate color classes
-    const reasonElement = screen.getByText(/First Unlocked Required Milestone|First Unlocked Optional Milestone|Last Completed Milestone|First Milestone in Plan/);
-    
-    // Should have one of the expected color classes
-    const hasColorClass = [
-      'text-green-600',
-      'text-blue-600', 
-      'text-yellow-600',
-      'text-gray-600'
-    ].some(className => reasonElement.classList.contains(className));
-    
-    expect(hasColorClass).toBe(true);
+    // Should show milestone name but not detailed reason or ID
+    expect(screen.getByText(/Current Milestone:/)).toBeInTheDocument();
+    expect(screen.queryByText(/ID:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/First Unlocked Required Milestone/)).not.toBeInTheDocument();
   });
 });

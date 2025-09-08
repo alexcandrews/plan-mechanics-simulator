@@ -8,6 +8,18 @@ const HomePage = () => {
       title: 'Plan Mechanics Simulator',
       description: 'A tool to visualize and test the unlocking and communication logic of guided plans.',
       path: '/plan-mechanics-simulator'
+    },
+    {
+      id: 'admin-panel',
+      title: 'Admin Panel Prototype',
+      description: 'A comprehensive admin interface for managing guided journey plans, health checks, and milestone configurations.',
+      path: '/admin-panel'
+    },
+    {
+      id: 'guided-journey',
+      title: 'Guided Journey Interface',
+      description: 'An exact replica of the AI Flight School guided journey admin interface with milestone management and navigation.',
+      path: '/guided-journey'
     }
     // Future prototypes will be added here
   ];
